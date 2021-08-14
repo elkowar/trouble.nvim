@@ -74,6 +74,27 @@ function M.definitions(win, buf, cb, _options)
   end)
 end
 
+---@return Item[]
+function M.type_definitions(win, buf, cb, _options)
+  local method = "textDocument/typeDefinition"
+  local params = util.make_position_params(win, buf)
+  lsp.buf_request(buf, method, params, function(err, _method, result, _client_id, _bufnr, _config)
+    if err then
+      util.error("an error happened getting type definitions: " .. err)
+      return cb({})
+    end
+    if result == nil or #result == 0 then
+      return cb({})
+    end
+    for _, value in ipairs(result) do
+      value.uri = value.targetUri or value.uri
+      value.range = value.targetSelectionRange or value.range
+    end
+    local ret = util.locations_to_items({ result }, 0)
+    cb(ret)
+  end)
+end
+
 function M.get_signs()
   local signs = {}
   for _, v in pairs(util.severity) do
